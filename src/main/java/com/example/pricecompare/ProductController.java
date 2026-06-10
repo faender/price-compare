@@ -5,36 +5,36 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/products")
-
 public class ProductController {
 
-    private final ProductRepository repository;
+    private final ProductService service;
 
-    public ProductController(ProductRepository repository) {
-        this.repository = repository;
+    public ProductController(ProductService service) {
+        this.service = service;
     }
 
     @GetMapping
     public List<Product> getAllProducts() {
-        return repository.findAll();
+        return service.getAllProducts();
     }
 
     @GetMapping("/{id}")
     public Product getProductById(@PathVariable String id) {
-        return repository.findById(id).orElseThrow();
+        return service.getProductById(id);
     }
 
     @GetMapping("/category/{category}")
-    public List<Product> getByCategory(@PathVariable String category) { return repository.findByCategory(category); }
+    public List<Product> getByCategory(@PathVariable String category) {
+        return service.getProductsByCategory(category);
+    }
 
     @PostMapping
     public Product createProduct(@RequestBody Product product) {
-        return repository.save(product);
+        return service.createProduct(product);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable String id) {
-        repository.deleteById(id);
+    public void deleteProductById(@PathVariable String id) {
+        service.deleteProductById(id);
     }
 }
-
