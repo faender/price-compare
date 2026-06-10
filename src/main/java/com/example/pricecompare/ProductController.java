@@ -25,9 +25,7 @@ public class ProductController {
     }
 
     @GetMapping("/category/{category}")
-        public List<Product> getByCategory(@PathVariable String category) {
-            return repository.findByCategory(category);
-        }
+    public List<Product> getByCategory(@PathVariable String category) { return repository.findByCategory(category); }
 
     @PostMapping
     public Product createProduct(@RequestBody Product product) {
