@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Compare</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+        header { background: #003a82; color: white; padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+        header h1 { font-size: 1.5rem; font-weight: 700; }
+        header span { font-size: 0.9rem; opacity: 0.8; }
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+        .controls { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .controls input, .controls select, .controls button { padding: 0.6rem 1rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+        .controls button { background: #003a82; color: white; border: none; cursor: pointer; font-weight: 600; }
+        .controls button:hover { background: #002a6b; }
+        .controls button.secondary { background: white; color: #333; border: 1px solid #ddd; }
+        .controls button.secondary:hover { background: #f0f0f0; }
+        .form-card { background: white; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .form-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #555; }
+        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .form-row input { flex: 1; min-width: 160px; padding: 0.6rem 1rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+        .form-row button { padding: 0.6rem 1.5rem; background: #003a82; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .form-row button:hover { background: #002a6b; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+        .card { background: white; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 0.5rem; }
+        .card .category { font-size: 0.75rem; font-weight: 600; color: #003a82; text-transform: uppercase; letter-spacing: 0.05em; }
+        .card .name { font-size: 1rem; font-weight: 600; }
+        .card .price { font-size: 1.4rem; font-weight: 700; color: #003a82; margin-top: auto; }
+        .card .delete { margin-top: 0.5rem; padding: 0.4rem; background: none; border: 1px solid #eee; border-radius: 6px; color: #999; cursor: pointer; font-size: 0.8rem; }
+        .card .delete:hover { border-color: #003a82; color: #003a82; }
+        .empty { text-align: center; padding: 3rem; color: #999; }
+        .count { font-size: 0.85rem; color: #999; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Price Compare</h1>
+    <span>Finde die besten Preise</span>
+</header>
+
+<div class="container">
+
+    <div class="form-card">
+        <h2>Produkt hinzufügen</h2>
+        <div class="form-row">
+            <input id="name" type="text" placeholder="Name" />
+            <input id="category" type="text" placeholder="Kategorie" />
+            <input id="price" type="number" placeholder="Preis (€)" step="0.01" />
+            <button onclick="createProduct()">Hinzufügen</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <input id="search" type="text" placeholder="Nach Kategorie filtern..." oninput="filterByCategory()" />
+        <button class="secondary" onclick="loadProducts()">Alle anzeigen</button>
+    </div>
+
+    <div class="count" id="count"></div>
+    <div class="grid" id="grid"></div>
+
+</div>
+
+<script>
+    const API = '';
+
+    async function loadProducts() {
+        document.getElementById('search').value = '';
+        const res = await fetch(`${API}/products`);
+        const products = await res.json();
+        renderProducts(products);
+    }
+
+    async function filterByCategory() {
+        const category = document.getElementById('search').value.trim();
+        if (!category) { loadProducts(); return; }
+        const res = await fetch(`${API}/products/category/${encodeURIComponent(category)}`);
+        const products = await res.json();
+        renderProducts(products);
+    }
+
+    async function createProduct() {
+        const name = document.getElementById('name').value.trim();
+        const category = document.getElementById('category').value.trim();
+        const price = parseFloat(document.getElementById('price').value);
+        if (!name || !category || isNaN(price)) { alert('Bitte alle Felder ausfüllen'); return; }
+        await fetch(`${API}/products`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, category, price })
+        });
+        document.getElementById('name').value = '';
+        document.getElementById('category').value = '';
+        document.getElementById('price').value = '';
+        loadProducts();
+    }
+
+    async function deleteProduct(id) {
+        await fetch(`${API}/products/${id}`, { method: 'DELETE' });
+        loadProducts();
+    }
+
+    function renderProducts(products) {
+        const grid = document.getElementById('grid');
+        const count = document.getElementById('count');
+        count.textContent = `${products.length} Produkt${products.length !== 1 ? 'e' : ''} gefunden`;
+        if (products.length === 0) {
+            grid.innerHTML = '<div class="empty">Keine Produkte gefunden</div>';
+            return;
+        }
+        grid.innerHTML = products.map(p => `
+            <div class="card">
+                <div class="category">${p.category}</div>
+                <div class="name">${p.name}</div>
+                <div class="price">${p.price.toFixed(2)} €</div>
+                <button class="delete" onclick="deleteProduct('${p.id}')">Entfernen</button>
+            </div>
+        `).join('');
+    }
+
+    loadProducts();
+</script>
+
+</body>
+</html>
